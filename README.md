@@ -40,6 +40,19 @@ Production build and direct CLI checks passed using project-local module caches 
 | CLI | Separate executable sharing `ClipCore` with the app. |
 | Privacy | Local-only database, no network, optional sensitive-content filters, explicit clear/prune commands. |
 
+## Development memory (Engram)
+
+Engram binds each agent session to a project from the session's own directory, not from the files it edits. The chain is: `.engram/config.json` (`project_name: clipboard`) for the Engram core, then the Git root basename as fallback for the Claude Code and opencode plugins. All four agents resolve to `clipboard` while their session directory is inside this repository.
+
+That gives one rule:
+
+- Launch the agent with its working directory inside this repository so the session binds to `clipboard`.
+- Launching from `~` binds the session to the unrelated `adm` project instead, even when every edited file belongs to this repository. Override explicitly with `ENGRAM_PROJECT=clipboard`, or `engram mcp --project clipboard` for a per-agent MCP registration.
+
+Codex runs its shell and hooks inside a macOS seatbelt sandbox, and the Engram store lives outside the writable workspace. Without a writable root pointing at that store, every Engram call dies on `acquire instance identity lock: ... .instance-id.lock: operation not permitted`, so the session hooks cannot register the session and the agent cannot save. Codex needs both a workspace-write sandbox mode and the Engram data directory declared as an extra writable root in its user config.
+
+Pi, Claude Code, and opencode are not sandboxed this way and need no extra configuration.
+
 ## Repository layout
 
 See [`docs/architecture.md`](docs/architecture.md) for the full MVP design and implementation plan.
